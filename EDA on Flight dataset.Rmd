@@ -1,0 +1,318 @@
+---
+title: "Visualisation Project Component 1"
+author: "Alok Dhar Dubey"
+date: "2023-09-29"
+output:
+  pdf_document:
+    fig_width: 7
+    fig_height: 3
+urlcolor: blue
+message: FALSE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = FALSE}
+# To stop all the warnings
+options(warn = -1)
+```
+
+\section{Introduction}
+
+In the past few decades, we had major technological advancements which changed our lifestyle, our ways of thinking and even our future goals. Among all these, the aviation industry is one such sector. It has become an important part of today's world due to its numerous uses, some of which has now become necessities. It is a boon to our civilization for enabling efficient transportation of goods and people. Apart from that, it fosters international trade, tourism and cultural exchange. It has now become a priority in cases of emergencies by providing humanitarian reliefs efficiently and much faster than ever. Due to these reasons, it is important to devise necessary strategies to keep the aviation industry running efficiently and without much hurdles. This project is an attempt in that direction.
+
+\section{Data Description}
+
+```{r, message=FALSE, echo=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(knitr)
+```
+
+```{r, echo = F}
+
+
+data <- read.csv("C:/Users/Hp/Desktop/Visualization/Project/Flights/flights.csv")
+data <- na.omit(data)
+
+required_columns <- c("month", "day", "dep_time", "sched_dep_time",
+                      "dep_delay", "name", "origin", "dest")
+data <- subset(data, select = required_columns)
+```
+
+```{r, echo = F}
+kable(head(data), caption = "The Flight Dataset")
+```
+
+We will be working with the flight dataset available on [Kaggle](https://www.kaggle.com/). The link to the Kaggle page containing the dataset can found [here](https://www.kaggle.com/datasets/mahoora00135/flights/data). The dataset contains information about the flights of an airport for the year 2013. It contains 3,36,776 rows and 21 columns. It includes information such as departure and arrival time, delays, flight company, flight number, flight origin and destination, flight duration, distance, hour and minute of flight, and exact date and time of flight. Due to the large size of dataset and restrictions on the size of this project, we will be using only some of its columns for our analysis.
+
+\newpage
+
+\section{Exploratory Data Analysis}
+
+Let's start by studying some of the columns of the dataset.
+
+```{r, echo = F}
+ggplot(data, aes(x = month)) +
+  geom_histogram(binwidth=0.5,fill="skyblue",color="black",alpha=0.7)+
+  labs(x = "Month",
+    y = "Frequency",
+    title = "Distribution of Data by Month")
+```
+
+From the graph above, it seems that there are approximately equal number of flights accross months.
+
+```{r, echo = F}
+ggplot(data, aes(x = day)) +
+  geom_histogram(binwidth = 0.5, fill = "red", color = "black", alpha = 0.7) +
+  labs(x = "Day",
+    y = "Frequency",
+    title = "Distribution of Data by Day")
+```
+
+The distribution of number of flights still remains approximately the same per day. Hence our dataset is well scattered across all the days and months almost equally.
+
+```{r, echo=FALSE}
+ggplot(data, aes(x = sched_dep_time)) +
+  geom_histogram(binwidth = 100, fill = "green", color = "black", alpha = 0.6) +
+  geom_vline(xintercept = seq(0, 2400, by = 100), color = "black", linetype = "dotted") +
+  labs(x = "Scheduled Departure Time",
+    y = "Frequency",
+    title = "Distribution of Scheduled Departure Times") +
+  scale_x_continuous(breaks = seq(0, 2400, by = 200)) +
+  theme_minimal()
+```
+
+Now this is an interesting graph. It shows the distribution of scheduled departure times of flights by their frequency. It seems that around 8 am and 3 pm are the times when the number of flights are at their peak. Also, there are no (or maybe some, but not visible on the graph) flights between 12am and 5 am.
+
+```{r, echo=FALSE}
+ggplot(data, aes(x = dep_time)) +
+  geom_histogram(binwidth = 100, fill = "gold", color = "black", alpha = 0.8) +
+  geom_vline(xintercept = seq(0, 2400, by = 100), color = "black", linetype = "dotted") +
+  labs(x = "Departure Time",
+    y = "Frequency",
+    title = "Distribution of Actual Departure Times") +
+  theme_minimal()
+```
+
+Same inference is also given by the actual departure times of flights. Also, both the above graphs are very similar.
+
+```{r, echo = F}
+ggplot(data = data, aes(x = dep_delay)) +
+  geom_histogram(binwidth = 5, fill = "blue", color = "black") +
+  labs(title = "Distribution of Departure Delays",
+    x = "Departure Delay (minutes)",
+    y = "Frequency") +
+  xlim(-5, 150)+
+  theme_minimal()
+```
+
+The above graph gives us the distribution of amount of delay in departure of flights. As expected, flights with very long delay in departure will be very few as compared to the ones with relatively small delay. In fact, the graph suggests that the relation would be a decreasing exponential.
+
+
+
+Now let's look at some graphs for a specific month and day. Let's say January 4th.
+
+```{r, echo = F}
+ggplot(subset(data, month == 1 & day == 4), aes(x = dep_time, y = dep_delay)) +
+  geom_point(color = "#CC79A7", alpha = 0.7, size = 2) +
+  labs(x = "Departure Time",
+    y = "Departure Delay (minutes)",
+    title = "Departure Times vs. Departure Delays (Jan 4)") +
+  theme_minimal()
+```
+
+The delays are first concentrated near the x axis around 5 am, when most of the flights start becoming operational. Then the departure in flights keeps on getting scattered as we move to the right, depicting that there are higher flight delays in the evening than there are in the morning. Highest delays are around the midnight. The interpretation of this would be, once there is a delay in a flight, its amount of delay gets added to the previously delayed flights, since the airline can only operate a small number of takeoffs and landings concurrently. Hence any delay in earlier flights affects the delays in future scheduled flights.
+
+Although this is not clear from one graph, but we can plot all the 365 graphs for all the days of every month of this dataset, and still we would get the same kind of distribution almost every time.
+
+Now let's move to bivariate distributions.
+
+```{r, echo = F}
+avg_delays <- aggregate(dep_delay ~ month, data = data, FUN = mean)
+
+ggplot(data = avg_delays, aes(x = factor(month), y = dep_delay)) +
+  geom_bar(stat = "identity", fill = "#009E73", alpha = 0.5) +
+  labs(title = "Average Flight Delays by Month", x = "Month", y = "Average Delay (minutes)") +
+  scale_x_discrete(labels = c("Jan", "Feb", "Mar", "Apr", "May",
+                              "Jun", "Jul", "Aug", "Sep", "Oct",
+                              "Nov", "Dec")) +
+  theme_minimal()
+```
+
+This graph shows us the average delay of flights for each month. The average seems to be the well suited metric here, since there are so many flight records that the outlier flight delays also gets even out. The graph shows a suddden rise in flight delays in the months of June, July and December. There can be many reasons for this, such as holidays in July and December (4th July is independence day for USA and Christmas and New Year in December), so more number of passengers booking and cancelling the flights.
+
+```{r, echo = F}
+std_dev_delays <- aggregate(dep_delay ~ month, data = data, FUN = sd)
+
+ggplot(data = std_dev_delays, aes(x = factor(month), y = dep_delay)) +
+  geom_bar(stat = "identity", fill = "#D55E00", alpha = 0.7) +
+  labs(title = "Standard Deviation of Flight Delays by Month", x = "Month", y = "Standard Deviation of Delay (minutes)") +
+  scale_x_discrete(labels = c("Jan", "Feb", "Mar", "Apr", "May",
+                              "Jun", "Jul", "Aug", "Sep", "Oct",
+                              "Nov", "Dec")) +
+  theme_minimal()
+```
+
+This is the standard deviation of flight delays for every month. It has almost the same distribution as that for mean of flight delays.
+
+```{r, echo = F, fig.width= 8, fig.height=4}
+summary_data <- data %>%
+  group_by(month) %>%
+  summarise(mean_delay = mean(dep_delay), 
+            sd_delay = sd(dep_delay), .groups = 'drop')
+
+month_names <- month.abb
+
+ggplot(summary_data, aes(x = factor(month, levels = 1:12, labels = month_names))) +
+  geom_line(aes(y = mean_delay, group = 1, color = "Mean Delay"), linewidth = 1) +
+  geom_line(aes(y = sd_delay, group = 1, color = "Standard Deviation"), linetype = "dashed", linewidth = 1) +
+  scale_color_manual(values = c("Mean Delay" = "blue", "Standard Deviation" = "red")) +
+  labs(title = "Flight Delay Analysis by Month",
+       x = "Month",
+       y = "Delay",
+       color = "Statistic") +
+  theme_minimal()
+```
+
+The above graph confirms our claim, perhaps too nicely. The mean and standard deviation of flight delays seems to be almost very identical. They are even plotted on the same set of co-ordinate axis. This means that higher the delay of a particular flight, more will be the spread of delay for that flight, i.e., a flight that delays too much also has a high spread in its magnitude of delay.
+
+```{r, echo = F, fig.width= 8, fig.height=4}
+summary_data <- data %>%
+  group_by(day) %>%
+  summarise(mean_delay = mean(dep_delay), 
+            sd_delay = sd(dep_delay), .groups = 'drop')
+
+ggplot(summary_data, aes(x = factor(day))) +
+  geom_line(aes(y = mean_delay, group = 1, color = "Mean Delay"), linewidth = 1) +
+  geom_line(aes(y = sd_delay, group = 1, color = "Standard Deviation"), linetype = "dashed", linewidth = 1) +
+  scale_color_manual(values = c("Mean Delay" = "blue", "Standard Deviation" = "red")) +
+  labs(title = "Flight Delay Analysis by Day",
+       x = "Day",
+       y = "Delay",
+       color = "Statistic") +
+  theme_minimal()
+```
+
+The above graph shows that this trend also prevails across days throughout the year. Hence on an average this trend seems to be the same for every flight of the year.
+
+```{r, echo = F, fig.width= 8, fig.height=3}
+average_delay <- data %>%
+  group_by(month, day) %>%
+  summarize(avg_delay = mean(dep_delay), .groups = 'drop')
+
+ggplot(average_delay, aes(x = day, y = month, fill = avg_delay)) +
+  geom_tile() +
+  scale_fill_gradient() +
+  labs(x = "Day",
+    y = "Month",
+    fill = "Average Delay (minutes)",
+    title = "Average Departure Delay Heatmap") +
+  scale_x_continuous(breaks = 1:31)+
+  scale_y_continuous(breaks = 1:12, labels = month.abb) +
+  theme_minimal()
+```
+
+This gives us all the information about average delay of flights accross days and months. Perhaps maximum average delays are around the center, i.e. around June and July. Also there are some noticeable delays in December.
+
+There is also an unexpextedly high average delay on 8th of March. This is not that unexpected. On further research, it turns out that on 8th March 2013, there was a wintery storm that prevailed in the Northeast, which caused many flights to get delayed on that day.
+
+```{r, echo = F, fig.width= 8, fig.height=5}
+frequency_table <- table(data$name)
+frequency_df <- as.data.frame(frequency_table)
+frequency_df <- frequency_df[order(frequency_df$Freq, decreasing = TRUE), ]
+custom_colors <- rainbow(16)
+
+ggplot(frequency_df, aes(x = reorder(Var1, -Freq), y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Frequency of Flights by Airline",
+    x = "Airline",
+    y = "Frequency") +
+  theme_minimal() +
+  coord_flip() +
+  scale_fill_manual(values = custom_colors)
+```
+
+This map gives us the frequencies of flights for each airline. Thus maximum number of flights are from the United Air Lines while lowest are from the SkyWest Airlines. JetBlue Airways is known for its low cost flights, making it more frequent than most.
+
+```{r, echo = F, fig.width= 8, fig.height=6}
+average_delay_data <- data %>%
+  group_by(name) %>%
+  summarise(average_delay = mean(dep_delay, na.rm = TRUE)) %>%
+  arrange(average_delay)
+
+ggplot(average_delay_data, aes(x = reorder(name, average_delay), y = average_delay, fill = name)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Delay Time by Airline",
+    x = "Airline Name",
+    y = "Average Delay Time (minutes)") +
+  theme_minimal() +
+  coord_flip() +
+  scale_y_continuous(limits = c(0, max(average_delay_data$average_delay) * 1.1))+
+  scale_fill_manual(values = custom_colors)
+```
+
+This graph gives us the average delay of flights by their airlines. Hence Frontier Airline flights has the maximum average delay, while US Airways has the lowest. Although, note that US Airways was operational upto 2015, after which it merged with American Airlines.
+
+```{r, echo = F, fig.width= 8, fig.height=5}
+colors <- rainbow(10)
+popular_routes <- data %>%
+  group_by(origin, dest) %>%
+  summarise(route_count = n(), .groups = 'drop') %>%
+  ungroup()
+
+top_routes <- popular_routes %>%
+  top_n(10, wt = route_count) %>%
+  mutate(route_label = paste(origin, dest))
+
+top_routes <- top_routes %>%
+  arrange(desc(route_count))
+
+ggplot(top_routes, aes(x = reorder(route_label, route_count), y = route_count, fill = route_label)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Top 10 Popular Routes",
+    x = "Route (Origin - Destination)",
+    y = "Frequency") +
+  theme_minimal() +
+  coord_flip() +
+  scale_fill_manual(values = colors)
+```
+
+Finally, this graph maps the top 10 most popular Flight Routes. Hence the route New York (JFK) to Los Angeles (LAX) is the most popular flight route, followed by New York (LGA) to Atlanta (ATL) and then by New York (LGA) to Chicago (ORD).
+
+```{=tex}
+\section{Results}
+```
+
+Many results can be drawn from our EDA.
+```{=tex}
+\begin{itemize}
+  \item Rise in delays of flights throughout the day.
+  \item Maximum average delays of flights occur around June, July and December.
+  \item The mean and standard deviation of flight delays are almost identical. So a flight with higher average delay will tend to deviate more from that average.
+  \item Unexpectedly high average delay on 8th of March, which turned out to be due to a wintery storm in the Northwest on that day.
+  \item United Airlines is the most frequent flight in the USA, and probably the most favorable flight by people.
+  \item Frontier Airlines with the highest average delay time.
+\end{itemize}
+```
+
+\newpage
+
+```{=tex}
+\section{Conclusion}
+```
+
+Many implications can be found from these results. First, note that a delay in flight can have many reasons, such as passenger being late for boarding a flight, pilot or staff not being in their positions in time, environmental factors, suspicious activities detected by custom officers, etc. All these reasons seems to be unrelated. So a delay in flight can mean any of the above listed things, or maybe something out of it.
+
+High average delays in June, July and December would probably mean a higher number of such occurrences from our list provided. Hence the Airline industry can take special measures for staff check, custom service efficiency with proper screening and a thorough check on whether conditions around these months.
+
+There were rise in the flight delays throughout the day. For this the airline can install a program which keeps monitoring the flights and starts operating for making everything function efficiently once the flight delay for that day reaches a threshold. This would ensure the program to get proper breaks and to itself function efficiently (since it would not be working continuously).
+
+There can be many more measures that can be taken for efficient running of the airline industry, which might be found from this dataset by a more elaborate EDA and including other columns that we left in our project.
+
+
+
+
