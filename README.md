@@ -1,1 +1,3 @@
 # Visualisation_Component_1
+
+This project is the component 1 of my ongoing course Visualisation. In this component, I have choosen a flight dataset from Kaggle (links in the pdf) and have performed a thorough Exploratory Data Analysis (EDA) on it, finding results from them and making conclusions. The entire project have been initiated in R Markdown, using libraries such as ggplot2, dplyr, tidyr and knitr. During the process, I took help from the internet, my colleagues, referred books and my professor's lecture notes, all of which were very helpful for me. The second component of this project will involve making an R Shiny app on the same dataset, which will be uploaded here soon.
